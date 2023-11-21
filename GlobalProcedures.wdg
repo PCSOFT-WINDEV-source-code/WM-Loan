@@ -1,0 +1,175 @@
+#To edit and compare internal_properties, use WINDEV integrated tools.
+#Internal properties refer to the properties of controls in windows, reports, etc.
+info :
+ name : GlobalProcedures
+ major_version : 28
+ minor_version : 0
+ type : 7
+ description : ""
+ subtype : 0
+procedure_set :
+ identifier : 0x11d5874600879783
+ internal_properties : CAAAAAgAAABGLu41kG7fjQV3iS4F72qmnKaNh5694reolNKIW0iw
+ code_elements :
+  internal_properties : CAAAAAgAAADqi/h89C5rPiYNe7Os2zzb2d/rvs3AXBSw3cYzbSMVCC3NssaEuVuAdblKq2GaeIQRJzOZiwR6lHTYqvbFiddGG39z+nqiVd2ogA==
+  type_code : 31
+  p_codes : []
+  procedures :
+   -
+     name : EndPaymentSchedule
+     internal_properties : CAAAAAgAAAAHOGMraSz08J3nPiDyS2LnhOfW4iOutkgg4D1tsNOcnhwHkXjV5SXUK2Ek9Djcxc7yaAJEw6uGMSnlWosLNdsRjL+K88U+EYfJP/Yq53K5+xbppbylDqSgeRLUTagJ2tQDFR1N/bg9OZKpljIb1W27NdBNJrVAzrTCu6hnQK6DXwMpFlHB5xpVqGqjqCCIt+wYaoTgvBYDFrKmH9uarXnGaL3/ECWNzSdQOE8W+GLhZvnvdlTg
+     procedure_id : 1285082003410556803
+     type_code : 15
+     code : |1-
+      // Syntax:
+      //EndPaymentSchedule (<nCapital>, <nMonthlyPayments>, <nRate>, <nNbPeriod>, <sDateFirstPayment>)
+      //
+      // Parameters:
+      //	nCapital: Amount of the capital
+      //	nMonthlyPayments: Amount of the monthly payments
+      //	nRate: Rate for the loan
+      //	nNbPeriod: Number of periods
+      //	sDateFirstPayment: Date of the first payment
+      // Return value:
+      // 	None
+      
+      procedure EndPaymentSchedule(nCapital, nMonthlyPayments, nRate, nNbPeriod, sDateFirstPayment)
+      
+      i							is int
+      nAmountMonthlyInterests		is currency
+      nAmountYearlyInterests		is currency
+      nAmountCumulatedInterests	is currency
+      nAmountMonthlyCapital		is currency
+      nAmountYearlyCapital		is currency
+      nAmountDue					is currency
+      dPaymentDate				is date
+      
+      extern LOOP_MONTHLY_PAYMENT_SCHEDULE
+      
+      LooperDeleteAll(LOOP_MONTHLY_PAYMENT_SCHEDULE)
+      
+      // Date of first payment
+      dPaymentDate	= sDateFirstPayment
+      
+      // Total amount to pay
+      nAmountDue		= nCapital
+      
+      //Fill the payment schedule
+      for i=1 _to_ nNbPeriod
+      	
+      	// Calculate the interests for the period
+      	nAmountMonthlyInterests = FinPeriodInterest(nCapital, nRate, i, nNbPeriod)
+      	nAmountYearlyInterests += nAmountMonthlyInterests
+      	
+      	// Cumulated interests
+      	nAmountCumulatedInterests+=nAmountMonthlyInterests
+      	
+      	// Calculate the capital for the period
+      	nAmountMonthlyCapital = nMonthlyPayments + nAmountMonthlyInterests
+      	nAmountYearlyCapital += nMonthlyPayments + nAmountMonthlyInterests
+      	
+      	// Amount due
+      	nAmountDue -= nAmountMonthlyCapital
+      	
+      	//Fill the monthly table
+      	// the rounded values are required when exporting to Excel
+      	LooperAddLine(LOOP_MONTHLY_PAYMENT_SCHEDULE, i, DateToString(dPaymentDate, "MMM yyyy"), Round(nMonthlyPayments), Round(-nAmountMonthlyInterests), Round(nAmountMonthlyCapital), Round(nAmountDue), Round(-nAmountCumulatedInterests))
+      	
+      	dPaymentDate.Month++
+      end
+     type : 458752
+   -
+     name : EndTotalInterest
+     internal_properties : CAAAAAgAAADuX8E5rxKQsTYq58DHsbM2KOEmdVrHISTFi0rkULGAh847GRlPY2EkgY7jIYDI3nHsO4XgmiSRcM83fD7vtoF0Ecf7RFgm35JPkP7Bmxb/lENoA8YtWPfc/hA1rvOO7z4rEHpBYm8iWZ5iytE1
+     procedure_id : 1285082003410622339
+     type_code : 15
+     code : |1+
+      // Syntax:
+      //[ <Result> = ] EndTotalInterest (<nCapital>, <nNbPeriods>, <nRate>)
+      //
+      // Parameters:
+      //	nCapital: Amount of the capital
+      //	nNbPeriods: Number of periods
+      //	nRate: Rate for the loan
+      // Return value:
+      // 	currency: Total amount of the interests
+      
+      procedure EndTotalInterest(nCapital,nNbPeriods,nRate)
+      
+      i							is int
+      nInterestAmount				is currency
+      nAmountCumulatedInterests	is currency
+      dPaymentDate				is date
+      
+      //Fill the payment schedule
+      for i=1 _to_ nNbPeriods
+      	// Calculate the interests for the given period
+      	nInterestAmount = FinPeriodInterest(nCapital, nRate, i, nNbPeriods)
+      	// Cumulated interests
+      	nAmountCumulatedInterests+=nInterestAmount
+      	// Next month
+      	dPaymentDate.Month++
+      end
+      
+      // Total cost of loan
+      return nAmountCumulatedInterests
+     type : 458752
+   -
+     name : EndMaxLoanAmount
+     internal_properties : CAAAAAgAAAC+f6VebJgfQSkyLr7FOPV5G8Fk0ftzav0lqdSBu9Hb8h1ae5GYP7O3Mqu0tNL8TZ2HfKOTDYb8mT+zUzJhGpscZxJKOxYuCl7lcNUfo50ncnP7oWhCN4l2z7UL4rafkBY5agtMH4DZcrlr6aPTbxdhL/N/Dy8AMhkFGUX6QJbvRcmZuT4ZlCCtUmgfOs5850NeCc9nCJ7WhrNrf6VZzKQUKXH9
+     procedure_id : 1285082003410687875
+     type_code : 15
+     code : |1-
+      // Syntax:
+      //[ <Result> = ] EndMaxLoanAmount (<nMonthlyPayments>, <nRate>, <nNbPeriod>)
+      //
+      // Parameters:
+      //	nMonthlyPayments: Amount of the monthly payments
+      //	nRate: Rate for the loan
+      //	nNbPeriod: Number of periods
+      // Return value:
+      // 	currency:    borrowable amount
+      
+      procedure EndMaxLoanAmount(nMonthlyPayments, nRate, nNbPeriod)
+      
+      // Search for the maximum loan amount according to the monthly payments, the rate and the duration
+      nMaxLoanAmount	is currency
+      nMaxLoanAmountA	is currency
+      nMaxLoanAmountB	is currency
+      nTotalCost		is currency
+      
+      // Initial Values
+      nMaxLoanAmountA	= 0
+      nMaxLoanAmountB	= 1000000000
+      nMaxLoanAmount	= nMaxLoanAmountB
+      
+      // Calculate the total cost of loan for a monthly payment, a number of years and a given rate
+      nTotalCost		= nMaxLoanAmount - EndTotalInterest(nMaxLoanAmount, nNbPeriod, nRate)
+      while Abs(nTotalCost - nMonthlyPayments * nNbPeriod) > 0.1
+      	
+      	nMaxLoanAmount	= (nMaxLoanAmountB+nMaxLoanAmountA)/2
+      	
+      	// Total cost of loan
+      	nTotalCost		= nMaxLoanAmount - EndTotalInterest(nMaxLoanAmount, nNbPeriod, nRate)
+      	
+      	if nTotalCost < nMonthlyPayments * nNbPeriod then
+      		nMaxLoanAmountA = nMaxLoanAmount
+      	else
+      		nMaxLoanAmountB = nMaxLoanAmount
+      	end
+      end
+      
+      // result:
+      return nMaxLoanAmount
+     type : 458752
+  procedure_templates : []
+  property_templates : []
+ code_parameters :
+  internal_properties : CAAAAAgAAACVGQgYbalU7DKC3oH4ItDrjtcTHXXV/EuH8q0IbhyQlw==
+  original_name : ProceduresGlobales
+resources :
+ string_res :
+  identifier : 0x114a02e9018a22a3
+  internal_properties : CAAAAAgAAACm76HWfKGWp33VjXInA4cRlqArlgTTA862QGt72W2ld5Y=
+custom_note :
+ internal_properties : CAAAAAgAAABtB9HWVzrXO2+4NDRVK0vmzaNKrCKqH1DBX30lMmGZ
